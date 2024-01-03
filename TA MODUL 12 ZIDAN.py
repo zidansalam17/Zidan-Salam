@@ -1,34 +1,66 @@
-Python 3.12.1 (tags/v3.12.1:2305ca5, Dec  7 2023, 22:03:25) [MSC v.1937 64 bit (AMD64)] on win32
-Type "help", "copyright", "credits" or "license()" for more information.
->>> from flask import Flask, jsonify, request
-... from flask_pymongo import PyMongo
-... from bson import ObjectId
-... 
-... app = Flask(__name__)
-... app.config['MONGO_URI'] = 'mongodb://localhost:27017/rental-mobil'
-... mongo = PyMongo(app)
-... 
-... @app.route('/api/cars', methods=['GET'])
-... def get_available_cars():
-...     cars = list(mongo.db.cars.find({'available': True}, {'_id': 0}))
-...     return jsonify(cars)
-... 
-... @app.route('/api/rent/<car_id>', methods=['POST'])
-... def rent_car(car_id):
-...     try:
-...         car = mongo.db.cars.find_one_and_update(
-...             {'_id': ObjectId(car_id), 'available': True},
-...             {'$set': {'available': False}},
-...             return_document=True
-...         )
-... 
-...         if car:
-...             return jsonify({'message': f'Successfully rented {car["brand"]} {car["name"]}'}), 200
-...         else:
-...             return jsonify({'error': 'Car not found or already rented'}), 404
-...     except Exception as e:
-...         print(e)
-...         return jsonify({'error': 'Internal Server Error'}), 500
-... 
-if __name__ == '__main__':
-    app.run(debug=True)
+import json
+from datetime import datetime
+
+class ZidanCarsRental:
+    def __init__(self):
+        self.transaksi_file = "transaksi.json"
+        self.transaksi = []
+
+    def load_transaksi(self):
+        try:
+            with open(self.transaksi_file, 'r') as file:
+                self.transaksi = json.load(file)
+        except FileNotFoundError:
+            self.transaksi = []
+
+    def save_transaksi(self):
+        with open(self.transaksi_file, 'w') as file:
+            json.dump(self.transaksi, file, indent=2)
+
+    def tampilkan_menu(self):
+        print("\n===== Aplikasi Rental Zidan Car's =====")
+        print("1. Tampilkan Transaksi")
+        print("2. Tambah Transaksi")
+        print("3. Keluar")
+
+    def tampilkan_transaksi(self):
+        print("\n===== Daftar Transaksi =====")
+        for idx, transaksi in enumerate(self.transaksi, 1):
+            print(f"{idx}. Tanggal: {transaksi['tanggal']}, Mobil: {transaksi['mobil']}, Biaya: {transaksi['biaya']}")
+
+    def tambah_transaksi(self):
+        print("\n===== Tambah Transaksi =====")
+        tanggal = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        mobil = input("Nama Mobil: ")
+        biaya = input("Biaya Sewa: ")
+
+        transaksi_baru = {
+            "tanggal": tanggal,
+            "mobil": mobil,
+            "biaya": biaya
+        }
+
+        self.transaksi.append(transaksi_baru)
+        self.save_transaksi()
+        print("Transaksi berhasil ditambahkan!")
+
+    def run(self):
+        self.load_transaksi()
+
+        while True:
+            self.tampilkan_menu()
+            pilihan = input("Pilih menu (1/2/3): ")
+
+            if pilihan == "1":
+                self.tampilkan_transaksi()
+            elif pilihan == "2":
+                self.tambah_transaksi()
+            elif pilihan == "3":
+                print("Terima kasih!")
+                break
+            else:
+                print("Pilihan tidak valid. Silakan coba lagi.")
+
+if __name__ == "__main__":
+    aplikasi = ZidanCarsRental()
+    aplikasi.run()
